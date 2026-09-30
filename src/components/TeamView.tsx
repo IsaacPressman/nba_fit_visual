@@ -48,13 +48,15 @@ const ordinal = (label: string) => {
  * anyone under the minutes pool are on the roster but not on the board, and
  * saying so is better than a board that quietly leaves out a top-three pick.
  */
-function Unscored({ fit, names }: { fit: TeamFit; names: string[] }) {
+function Unscored({ fit, names, ghosts }: { fit: TeamFit; names: string[]; ghosts: number }) {
   const shown = names.slice(0, 6)
   return (
     <p className="pooled-note" style={{ marginTop: 'calc(var(--step) * 3)' }}>
-      Projected from 2025-26: each of these eight keeps last season's skills, usage and minutes
+      Projected from 2025-26: each scored player keeps last season's skills, usage and minutes
       per game on his new team, and together they carry {fit.totalLoad.toFixed(1)}% of
       possessions.{' '}
+      {ghosts > 0 &&
+        `The dashed ${ghosts === 1 ? 'piece is a lottery rookie' : 'pieces are lottery rookies'} holding a seat on the typical role for his pick, drawn but not scored. `}
       {names.length === 0
         ? 'Everyone on the roster has 2025-26 data.'
         : `Not scored, with no 2025-26 data to go on (rookies, or under 500 minutes): ${shown.join(', ')}${
@@ -378,6 +380,7 @@ export function TeamView({
               dropTarget={dropTarget}
               selected={selected}
               overlap={overlap}
+              ghosts={team.ghosts}
               onHoverPlayer={hoverPlayer}
               onHoverChannel={hoverChannel}
               onPickPlayer={pick}
@@ -430,8 +433,8 @@ export function TeamView({
 
           <p className="pooled-note">
             {team.overlap
-              ? 'Each notch is painted by the teammates who share the floor with that player, weighted by their minutes together; how full it is comes from the whole rotation. Every notch is drawn to scale, so the stripes add up to the exposure figure. Point at a player to see only his share.'
-              : 'Coverage is pooled across the rotation, so the painted colors show who supplies the skill, not a one-to-one assignment. Every notch is drawn to scale, so the stripes add up to the exposure figure. Point at a player to see only his share.'}
+              ? 'Each notch is painted by the teammates who share the floor with that player, weighted by their minutes together; how full it is comes from the whole rotation. Every notch is drawn to scale, so the stripes add up to the exposure figure' + (team.ghosts?.length ? ' across the scored pieces; a dashed rookie seat is left out of it' : '') + '. Point at a player to see only his share.'
+              : 'Coverage is pooled across the rotation, so the painted colors show who supplies the skill, not a one-to-one assignment. Every notch is drawn to scale, so the stripes add up to the exposure figure' + (team.ghosts?.length ? ' across the scored pieces; a dashed rookie seat is left out of it' : '') + '. Point at a player to see only his share.'}
           </p>
         </div>
 
@@ -451,7 +454,7 @@ export function TeamView({
             <h3>What is covered</h3>
             <Breakdown fit={fit} highlight={highlight} onHighlight={setHighlight} />
             {projected ? (
-              <Unscored fit={fit} names={team.unscored ?? []} />
+              <Unscored fit={fit} names={team.unscored ?? []} ghosts={team.ghosts?.length ?? 0} />
             ) : (
               <Availability fit={fit} />
             )}
@@ -476,6 +479,28 @@ export function TeamView({
             onDropOnPlayer={seat}
             dropTarget={dropTarget}
           />
+          {(team.ghosts ?? []).length > 0 && (
+            <ul className="roster ghost-rows">
+              {team.ghosts!.map((g) => (
+                <li key={g.name}>
+                  <div className="roster-row" aria-disabled="true">
+                    <span className="chip ghost-chip" aria-hidden="true" />
+                    <span className="roster-name">
+                      <span className="who">{g.name}</span>
+                      <span className="tags">
+                        <span className="tag" data-kind="caution">
+                          No. {g.pick} pick · not scored
+                        </span>
+                      </span>
+                    </span>
+                    <span className="roster-load" title={`typical rookie role for picks ${g.range}`}>
+                      {(g.load / (fit.totalLoad + team.ghosts!.reduce((a, x) => a + x.load, 0)) * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section className="chosen">

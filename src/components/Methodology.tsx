@@ -52,7 +52,11 @@ export function Methodology({ data }: { data: League }) {
           The one exception is an injury-shortened season: a player with 250 to 499{' '}
           {data.basedOn} minutes is scored if he played 1,000 or more the season before, so a
           star back from injury is on the board. He is marked "small sample", because so few
-          minutes pull his percentiles well toward average.
+          minutes pull his percentiles well toward average. Lottery rookies have no NBA data at
+          all, so none is scored; but each competes for a rotation seat on the typical rookie
+          role for his pick (median minutes and usage for picks 1–3, 4–7 and 8–14 over the last
+          three draft classes), and one who wins a seat is drawn as a dashed, empty piece: the
+          board shows the space he takes without pretending to know his shape.
           There are no records, lineups or shared minutes yet, so the chart, the lineups row and
           the shared-minutes notch colors wait for games to be played.
         </p>

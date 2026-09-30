@@ -50,8 +50,15 @@ with big minutes in a few games. 2024-25 only decides eligibility; his skills
 still come from 2025-26 alone, pulled hard toward average by the small sample,
 and the app marks him "small sample".
 
-What it cannot see: rookies and anyone else without enough 2025-26 minutes have
-nothing to score, so each team page names them instead; roles that change with a new team;
+Lottery rookies (picks 1-14) are not scored, but they are not hidden either.
+Each competes for a rotation seat on the typical rookie role for his pick —
+median minutes and usage for picks 1-3, 4-7 and 8-14 over the 2023-25 draft
+classes (28.5 / 25.1 / 21.2 minutes) — and one who wins a seat is drawn as a
+dashed ghost piece: it takes its share of the board and counts in no score. Nine
+do (AJ Dybantsa, Darryn Peterson, Cameron Boozer and others).
+
+What it cannot see: other rookies and anyone else without enough 2025-26 minutes
+have nothing to score, so each team page names them instead; roles that change with a new team;
 and records, lineups and shared minutes, which do not exist yet — so in the
 projected season the chart, the lineups row and the shared-minutes notch colors
 step aside. Re-run it as rosters change; `--refetch` pulls them again.

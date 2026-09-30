@@ -1690,3 +1690,52 @@ summary .hint {
   align-items: flex-start;
   gap: calc(var(--step) * 2);
 }
+
+/* ------------------------------------------------------------- ghosts */
+
+/* a lottery rookie holding a seat: the space his role takes, nothing more */
+.ghost-outline {
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.ghost-outline.bare {
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+
+.ghost-name {
+  fill: var(--ink-2);
+  font-variation-settings: 'wdth' 82;
+  font-weight: 600;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ghost-note {
+  fill: var(--ink-3);
+  font-variation-settings: 'wdth' 84;
+  pointer-events: none;
+  user-select: none;
+}
+
+.ghost-rows {
+  border-top: 1px dashed var(--hair);
+}
+
+.ghost-chip {
+  background: none;
+  border: 1.5px dashed var(--ink-3);
+}
+
+.ghost-rows .roster-row {
+  cursor: default;
+}
+
+.ghost-rows .roster-row:hover {
+  background: none;
+  box-shadow: none;
+}

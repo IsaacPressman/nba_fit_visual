@@ -25,7 +25,8 @@ describe.skipIf(!have)('2026-27 projection', () => {
     expect(league.basedOn).toBe(now.season)
     expect(league.teams).toHaveLength(30)
     for (const t of league.teams) {
-      expect(t.players).toHaveLength(league.rotationSize)
+      // a rotation seat is a scored player or a lottery rookie's ghost
+      expect(t.players.length + (t.ghosts?.length ?? 0)).toBe(league.rotationSize)
       expect(t.wins + t.losses).toBe(0)
     }
   })
@@ -81,6 +82,22 @@ describe.skipIf(!have)('2026-27 projection', () => {
     const total = league.teams.reduce((n, t) => n + (t.unscored?.length ?? 0), 0)
     expect(total).toBeGreaterThan(0)
     for (const t of league.teams) expect(Array.isArray(t.unscored)).toBe(true)
+  })
+
+  it('seats lottery rookies as ghosts: sized by a typical role, never scored', () => {
+    const ghosts = league.teams.flatMap((t) => (t.ghosts ?? []).map((g) => ({ ...g, team: t })))
+    expect(ghosts.length).toBeGreaterThan(0)
+    for (const g of ghosts) {
+      expect(g.pick).toBeGreaterThanOrEqual(1)
+      expect(g.pick).toBeLessThanOrEqual(14)
+      // stored mpg and usage are rounded, so recomputing the load lands within 0.05
+      expect(Math.abs(g.load - (g.usg * g.mpg) / 48)).toBeLessThan(0.05)
+      // not scored, and not also listed as unscored
+      expect(g.team.players.some((p) => p.name === g.name)).toBe(false)
+      expect(g.team.unscored ?? []).not.toContain(g.name)
+    }
+    const was = league.teams.find((t) => t.abbr === 'WAS')!
+    expect(was.ghosts?.map((g) => g.name)).toContain('AJ Dybantsa')
   })
 
   it('scores like any other season', () => {

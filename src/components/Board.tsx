@@ -15,6 +15,11 @@
  * is replaced his piece shrinks away and the newcomer grows into the seat,
  * while everyone else glides to their new cell and every notch eases from its
  * old coverage to its new one.
+ *
+ * A projected season can also seat ghosts: lottery rookies with no NBA data,
+ * sized by the typical role for their pick and drawn as an empty dashed piece.
+ * They take their share of the board and nothing else — no notches, no paint,
+ * no part of any score.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { slotFracs, type Focus } from '../fit/highlight'
@@ -22,7 +27,7 @@ import { easeInOutCubic, explode, lerpRect, squarify, type Rect } from '../fit/l
 import { channel } from '../fit/model'
 import type { SlotMap } from '../fit/palette'
 import type { SlotId } from '../fit/geometry'
-import type { Channel, Rules, Shape, Supplier, TeamFit } from '../fit/types'
+import type { Channel, Ghost, Rules, Shape, Supplier, TeamFit } from '../fit/types'
 import { Piece, type Detail } from './Piece'
 import { useWidth } from './useWidth'
 
@@ -58,6 +63,8 @@ interface BoardProps {
   layout?: 'auto' | 'wide'
   /** shared minutes, so each notch is painted by who actually plays beside him */
   overlap?: Overlap
+  /** unscored rookies holding a rotation seat (projected seasons) */
+  ghosts?: Ghost[]
   onHoverPlayer?: (id: string | null, at?: { x: number; y: number }) => void
   onHoverChannel?: (c: Channel | null, at?: { x: number; y: number }) => void
   onPickPlayer?: (id: string) => void
@@ -163,10 +170,13 @@ const shrink = (r: Rect, k: number): Rect => ({
 })
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
-function layoutOf(fit: TeamFit, frame: Rect, columns: number) {
-  const items = [...fit.shapes]
-    .sort((a, b) => b.player.load - a.player.load)
-    .map((s) => ({ id: s.player.id, value: s.player.load }))
+export const ghostId = (g: Ghost) => `ghost:${g.name}`
+
+function layoutOf(fit: TeamFit, frame: Rect, columns: number, ghosts: Ghost[] = []) {
+  const items = [
+    ...fit.shapes.map((s) => ({ id: s.player.id, value: s.player.load })),
+    ...ghosts.map((g) => ({ id: ghostId(g), value: g.load })),
+  ].sort((a, b) => b.value - a.value)
   return {
     assembled: new Map(squarify(items, frame).map((c) => [c.id, c as Rect])),
     exploded: new Map(explode(items, frame, columns).map((c) => [c.id, c as Rect])),
@@ -186,6 +196,7 @@ export function Board({
   selected = null,
   layout = 'auto',
   overlap,
+  ghosts = [],
   onHoverPlayer,
   onHoverChannel,
   onPickPlayer,
@@ -201,10 +212,10 @@ export function Board({
   const frame: Rect = { x: seam / 2, y: seam / 2, w: VIEW.w - seam, h: VIEW.h - seam }
 
   const cells = useMemo(
-    () => layoutOf(fit, frame, VIEW.columns),
+    () => layoutOf(fit, frame, VIEW.columns, ghosts),
     // frame is derived from VIEW, so VIEW stands in for it
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [fit, VIEW],
+    [fit, VIEW, ghosts],
   )
 
   // A swap changes who is in the rotation; a rules change does not. Only the
@@ -320,7 +331,18 @@ export function Board({
   }
 
   return (
-    <svg ref={ref} viewBox={`0 0 ${VIEW.w} ${VIEW.h}`} role="img" aria-label={boardLabel(fit)}>
+    <svg
+      ref={ref}
+      viewBox={`0 0 ${VIEW.w} ${VIEW.h}`}
+      role="img"
+      aria-label={boardLabel(fit, ghosts)}
+    >
+      {ghosts.map((g) => {
+        const a = cells.exploded.get(ghostId(g))
+        const b = cells.assembled.get(ghostId(g))
+        if (!a || !b) return null
+        return <GhostPiece key={ghostId(g)} ghost={g} cell={lerpRect(a, inset(b), t)} unit={unit} />
+      })}
       {items.map((it) => (
         // Drag events bubble up from the piece to this group, so dropping
         // needs no overlay. An invisible rect laid over the piece used to do
@@ -387,14 +409,80 @@ export function Board({
   )
 }
 
-function boardLabel(fit: TeamFit) {
+function boardLabel(fit: TeamFit, ghosts: Ghost[] = []) {
   const parts = fit.shapes
     .slice()
     .sort((a, b) => b.player.load - a.player.load)
     .map((s) => `${s.player.name} ${s.player.load.toFixed(1)}%`)
+  const rookies = ghosts.length
+    ? ` Rookies holding a seat, not scored: ${ghosts
+        .map((g) => `${g.name} (No. ${g.pick} pick)`)
+        .join(', ')}.`
+    : ''
   return `${fit.team.name} rotation board. Exposure ${fit.wastedFitPct.toFixed(
     1,
-  )}%. Possession share: ${parts.join(', ')}.`
+  )}%. Possession share: ${parts.join(', ')}.${rookies}`
+}
+
+/**
+ * A rookie holding a seat: the space his role takes, and nothing more. A dashed
+ * outline on the mat, no fill, no notches — the board says a piece belongs here
+ * and that it cannot yet say what shape it is.
+ */
+function GhostPiece({
+  ghost,
+  cell,
+  unit = 1,
+  detail = 'full',
+}: {
+  ghost: Ghost
+  cell: Rect
+  unit?: number
+  detail?: Detail
+}) {
+  const wPx = cell.w / unit
+  const hPx = cell.h / unit
+  const namePx = Math.max(11, Math.min(15, Math.min(wPx, hPx) * 0.15))
+  const last = ghost.name.replace(/\s+(Jr\.|Sr\.|II|III|IV)$/i, '').split(/\s+/).pop() ?? ghost.name
+  const fits = last.length * namePx * 0.52 <= wPx * 0.86 && hPx >= namePx * 3.4
+  return (
+    <g className="ghost-piece">
+      <title>
+        {`${ghost.name}, No. ${ghost.pick} pick. A rookie, not scored: his seat is sized by the typical rookie year of picks ${ghost.range} (${ghost.mpg} minutes, ${ghost.usg.toFixed(1)} usage).`}
+      </title>
+      <rect
+        className={detail === 'full' ? 'ghost-outline' : 'ghost-outline bare'}
+        x={cell.x}
+        y={cell.y}
+        width={cell.w}
+        height={cell.h}
+      />
+      {detail === 'full' && fits && (
+        <>
+          <text
+            className="ghost-name"
+            x={cell.x + cell.w / 2}
+            y={cell.y + cell.h / 2 - namePx * 0.4 * unit}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize={namePx * unit}
+          >
+            {last}
+          </text>
+          <text
+            className="ghost-note"
+            x={cell.x + cell.w / 2}
+            y={cell.y + cell.h / 2 + namePx * 0.8 * unit}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize={namePx * 0.72 * unit}
+          >
+            No. {ghost.pick} pick · not scored
+          </text>
+        </>
+      )}
+    </g>
+  )
 }
 
 /**
@@ -409,31 +497,47 @@ export function Tile({
   maxLoad,
   size = 240,
   color = 'var(--tile-piece)',
+  ghosts = [],
 }: {
   fit: TeamFit
   rules: Rules
+  /** the largest board's load, ghosts included, so every tile shares a scale */
   maxLoad: number
   size?: number
   /** one neutral tone by default: team colors fought the stripes */
   color?: string
+  ghosts?: Ghost[]
 }) {
-  const side = size * Math.sqrt(fit.totalLoad / maxLoad)
+  const ghostLoad = ghosts.reduce((a, g) => a + g.load, 0)
+  const side = size * Math.sqrt((fit.totalLoad + ghostLoad) / maxLoad)
   const pad = (size - side) / 2
   const seam = size * 0.014
   const frame: Rect = { x: pad, y: pad, w: side, h: side }
 
   const cells = useMemo(() => {
-    const items = [...fit.shapes]
-      .sort((a, b) => b.player.load - a.player.load)
-      .map((s) => ({ id: s.player.id, value: s.player.load }))
+    const items = [
+      ...fit.shapes.map((s) => ({ id: s.player.id, value: s.player.load })),
+      ...ghosts.map((g) => ({ id: ghostId(g), value: g.load })),
+    ].sort((a, b) => b.value - a.value)
     return new Map(squarify(items, frame).map((c) => [c.id, c]))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fit, side])
+  }, [fit, side, ghosts])
 
   const solid = () => color
 
   return (
     <svg viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+      {ghosts.map((g) => {
+        const c = cells.get(ghostId(g))
+        if (!c) return null
+        const drawn = {
+          x: c.x + seam / 2,
+          y: c.y + seam / 2,
+          w: Math.max(1, c.w - seam),
+          h: Math.max(1, c.h - seam),
+        }
+        return <GhostPiece key={ghostId(g)} ghost={g} cell={drawn} detail="simple" />
+      })}
       {fit.shapes.map((shape) => {
         const c = cells.get(shape.player.id)
         if (!c) return null

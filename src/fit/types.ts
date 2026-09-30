@@ -60,6 +60,22 @@ export interface Team {
   lineups?: Array<{ keys: string[]; minutes: number }>
   /** projected seasons: rostered players with no data to score (rookies, under 500 minutes) */
   unscored?: string[]
+  /**
+   * Projected seasons: lottery rookies who won a rotation seat on the typical
+   * role for their pick. Drawn on the board, sized by that role, never scored.
+   */
+  ghosts?: Ghost[]
+}
+
+export interface Ghost {
+  name: string
+  pick: number
+  mpg: number
+  usg: number
+  /** share of possessions the typical role implies; the ghost piece's area */
+  load: number
+  /** the pick range whose rookies set the role, e.g. "1-3" */
+  range: string
 }
 
 export interface League {

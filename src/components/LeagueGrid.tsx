@@ -121,6 +121,7 @@ function Intro({
             assembly={assembly}
             focus={focusOf(demo, null)}
             layout="wide"
+            ghosts={demo.team.ghosts}
           />
         </button>
         <figcaption>
@@ -161,7 +162,12 @@ export function LeagueGrid({
   // a projection has no records to sort by
   const sort: Sort = projected ? 'fit' : chosenSort
 
-  const maxLoad = useMemo(() => Math.max(...fits.map((f) => f.totalLoad)), [fits])
+  // ghosts take board space too, so they count toward the shared tile scale
+  const ghostLoad = (f: TeamFit) => (f.team.ghosts ?? []).reduce((a, g) => a + g.load, 0)
+  const maxLoad = useMemo(
+    () => Math.max(...fits.map((f) => f.totalLoad + ghostLoad(f))),
+    [fits],
+  )
   const maxExposure = useMemo(
     () => Math.ceil(Math.max(...fits.map((f) => f.wastedFitPct)) / 5) * 5 || 5,
     [fits],
@@ -227,7 +233,7 @@ export function LeagueGrid({
             )}% exposure, rank ${rankLabel(ranks, f.team.abbr)}. Open board.`}
           >
             <span className="tile-mat">
-              <Tile fit={f} rules={rules} maxLoad={maxLoad} size={240} />
+              <Tile fit={f} rules={rules} maxLoad={maxLoad} size={240} ghosts={f.team.ghosts} />
             </span>
             <span className="tile-meta">
               <span
