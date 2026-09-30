@@ -40,6 +40,19 @@ export function Key() {
 export function Methodology({ data }: { data: League }) {
   return (
     <div className="prose">
+      {data.projected && (
+        <p>
+          <b>This season is a projection.</b> The {data.season} rosters come from
+          Basketball-Reference; everything about the players comes from {data.basedOn}. Each
+          player keeps his {data.basedOn} skills, usage and minutes per game and plays them on
+          the team that rosters him now, and each rotation is the eight rostered players with the
+          most {data.basedOn} minutes per game. It cannot see roles changing with a new team — a
+          sixth man who becomes a starter keeps his old minutes here — and rookies or anyone
+          without enough {data.basedOn} minutes are named on the team page rather than scored.
+          There are no records, lineups or shared minutes yet, so the chart, the lineups row and
+          the shared-minutes notch colors wait for games to be played.
+        </p>
+      )}
       <p>
         <b>Scope.</b> All 30 teams, {data.season} regular season, each team's top{' '}
         {data.rotationSize} players by total minutes for that team. Piece area is usage rate ×

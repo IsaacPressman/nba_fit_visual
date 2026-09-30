@@ -241,7 +241,11 @@ def player_payload(stint, sk):
     }
 
 
-def main():
+def prepare():
+    """The 2025-26 player picture everything else is built from: per-team
+    stints with usage and load, per-player skills, and the defense regression.
+    Shared with project_season.py, so a projected season scores players exactly
+    as the app scores them."""
     logs = load_logs()
     epm = pd.read_csv(DATA / "epm_2025_26.csv")
     epm["key"] = epm["player_name"].map(norm_name)
@@ -257,7 +261,11 @@ def main():
     season = per_season(logs)
     skills, reg = build_skills(season, depm)
     skills["epm"] = skills["key"].map(tepm).fillna(0.0)
-    sk = skills.set_index("key")
+    return stints, season, skills.set_index("key"), reg
+
+
+def main():
+    stints, season, sk, reg = prepare()
 
     standings = pd.read_csv(DATA / "standings_2025_26.csv")
     standings["abbr"] = standings["bbref"].map(BBREF_TO_ABBR)

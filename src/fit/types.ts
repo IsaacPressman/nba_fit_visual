@@ -53,10 +53,16 @@ export interface Team {
   overlap?: Record<string, Record<string, number>>
   /** the most-used five-man lineups whose five are all in the pool, by name key */
   lineups?: Array<{ keys: string[]; minutes: number }>
+  /** projected seasons: rostered players with no data to score (rookies, under 500 minutes) */
+  unscored?: string[]
 }
 
 export interface League {
   season: string
+  /** a projection: next season's rosters scored on last season's play */
+  projected?: boolean
+  /** the season a projection's player data comes from */
+  basedOn?: string
   generated: string
   rotationSize: number
   pool: { minMinutes: number; size: number; shrinkPrior: number }

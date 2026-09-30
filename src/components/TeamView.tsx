@@ -43,6 +43,27 @@ const ordinal = (label: string) => {
  * it, and dividing by total load normalises the missing share away. That is
  * health rather than construction, so it is reported here instead of charged.
  */
+/**
+ * A projected season scores only players with last season's data. Rookies and
+ * anyone under the minutes pool are on the roster but not on the board, and
+ * saying so is better than a board that quietly leaves out a top-three pick.
+ */
+function Unscored({ fit, names }: { fit: TeamFit; names: string[] }) {
+  const shown = names.slice(0, 6)
+  return (
+    <p className="pooled-note" style={{ marginTop: 'calc(var(--step) * 3)' }}>
+      Projected from 2025-26: each of these eight keeps last season's skills, usage and minutes
+      per game on his new team, and together they carry {fit.totalLoad.toFixed(1)}% of
+      possessions.{' '}
+      {names.length === 0
+        ? 'Everyone on the roster has 2025-26 data.'
+        : `Not scored, with no 2025-26 data to go on (rookies, or under 500 minutes): ${shown.join(', ')}${
+            names.length > shown.length ? ` and ${names.length - shown.length} more` : ''
+          }.`}
+    </p>
+  )
+}
+
 function Availability({ fit }: { fit: TeamFit }) {
   const missed = fit.shapes
     .map((s) => s.player)
@@ -120,6 +141,7 @@ export function TeamView({
   mode,
   textured,
   swap,
+  projected = false,
   onSwap,
   onRules,
 }: {
@@ -132,6 +154,8 @@ export function TeamView({
   mode: Mode
   textured: boolean
   swap: { out: Player; in: Player } | null
+  /** a projected season: no record, no lineups, and unscored players named */
+  projected?: boolean
   onSwap: (s: { out: Player; in: Player } | null) => void
   onRules: (r: Rules) => void
 }) {
@@ -317,7 +341,7 @@ export function TeamView({
       <div className="team-head">
         <h1>{team.name}</h1>
         <span className="record">
-          {team.wins}-{team.losses}
+          {projected ? `${data.season} projected` : `${team.wins}-${team.losses}`}
         </span>
       </div>
 
@@ -426,7 +450,11 @@ export function TeamView({
           <section>
             <h3>What is covered</h3>
             <Breakdown fit={fit} highlight={highlight} onHighlight={setHighlight} />
-            <Availability fit={fit} />
+            {projected ? (
+              <Unscored fit={fit} names={team.unscored ?? []} />
+            ) : (
+              <Availability fit={fit} />
+            )}
           </section>
         </div>
       </div>

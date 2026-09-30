@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { rankByFit, scoreLeague } from './fit/model'
 import type { Mode } from './fit/palette'
 import { DEFAULT_RULES, type League, type Player, type Rules } from './fit/types'
@@ -7,7 +7,13 @@ import { LeagueGrid } from './components/LeagueGrid'
 import { SvgDefs } from './components/SvgDefs'
 import { TeamView } from './components/TeamView'
 import { Tooltip, tooltip } from './components/Tooltip'
-import { formatRoute, parseRoute, type Route, type View } from './route'
+import { formatRoute, parseRoute, SEASONS, type Route, type Season, type View } from './route'
+
+/** One static bundle per season; the current season keeps its original name. */
+const BUNDLE: Record<Season, string> = {
+  '2025-26': 'league.json',
+  '2026-27': 'league-2026-27.json',
+}
 
 const HOME_TEAM = 'OKC'
 
@@ -75,27 +81,58 @@ function useRoute(): [Route, (next: Partial<Route>, push?: boolean) => void] {
 }
 
 export default function App() {
-  const [data, setData] = useState<League | null>(null)
+  // bundles are fetched when a season is first opened, then kept
+  const [bundles, setBundles] = useState<Partial<Record<Season, League>>>({})
   const [error, setError] = useState<string | null>(null)
   const [route, go] = useRoute()
   const [textured, setTextured] = useState(false)
   const [mode, setMode, explicit] = useMode()
 
-  const { view, rules } = route
+  const { view, rules, season } = route
+
+  // While a season loads, keep drawing the one on screen rather than blanking
+  // the whole page, header and all, for a moment.
+  const shown = useRef<League | null>(null)
+  const data = bundles[season] ?? shown.current
+  shown.current = data
+  const loading = !bundles[season] && data !== null
+
+  const load = useCallback((s: Season) => {
+    return fetch(BUNDLE[s]).then((r) => {
+      if (!r.ok) throw new Error(`${r.status}`)
+      return r.json() as Promise<League>
+    })
+  }, [])
 
   useEffect(() => {
-    fetch('league.json')
-      .then((r) => {
-        if (!r.ok) throw new Error(`${r.status}`)
-        return r.json() as Promise<League>
-      })
-      .then(setData)
+    if (bundles[season]) return
+    setError(null)
+    load(season)
+      .then((league) => setBundles((b) => ({ ...b, [season]: league })))
       .catch(() =>
         setError(
-          'The league bundle is missing. Build it with: python pipeline/fetch_sources.py && cd pipeline && python build_data.py',
+          season === '2025-26'
+            ? 'The league bundle is missing. Build it with: python pipeline/fetch_sources.py && cd pipeline && python build_data.py'
+            : `The ${season} projection is missing. Build it with: cd pipeline && python project_season.py`,
         ),
       )
-  }, [])
+  }, [season, bundles, load])
+
+  // once the first season is up, fetch the others quietly so switching is instant
+  const first = Object.keys(bundles).length > 0
+  useEffect(() => {
+    if (!first) return
+    for (const s of SEASONS) {
+      if (bundles[s]) continue
+      load(s)
+        .then((league) => setBundles((b) => (b[s] ? b : { ...b, [s]: league })))
+        .catch(() => {
+          // a missing projection only matters when someone opens it
+        })
+    }
+    // only once the first bundle has landed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [first])
 
   // a readout from the page you just left is never right on the next one
   useEffect(() => tooltip.hide(), [view, route.team])
@@ -120,6 +157,8 @@ export default function App() {
   }, [data, team, route.swap])
 
   const setView = (next: View) => go({ view: next, swap: null }, true)
+  const setSeason = (next: Season) => go({ season: next, swap: null }, true)
+  const projected = !!data?.projected
 
   const open = (next: string) => {
     go({ view: 'team', team: next, swap: null }, true)
@@ -139,7 +178,7 @@ export default function App() {
   if (!data || !team) {
     return (
       <div className="shell">
-        <div className="loading">Loading the 2025-26 rotations…</div>
+        <div className="loading">Loading the {season} rotations…</div>
       </div>
     )
   }
@@ -149,9 +188,26 @@ export default function App() {
       <SvgDefs mode={mode} />
 
       <header className="topbar">
-        <span className="wordmark">
-          Missing Pieces<span>{data.season}</span>
-        </span>
+        <span className="wordmark">Missing Pieces</span>
+
+        <div
+          className="tabs season-tabs"
+          role="group"
+          aria-label="Season"
+          aria-busy={loading || undefined}
+        >
+          {SEASONS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              aria-current={season === s ? 'page' : undefined}
+              onClick={() => setSeason(s)}
+            >
+              {s}
+              {s === '2026-27' && <span className="season-tag">projected</span>}
+            </button>
+          ))}
+        </div>
 
         <nav className="tabs" aria-label="Views">
           <button
@@ -224,7 +280,7 @@ export default function App() {
       <main>
         {view === 'team' && (
           <TeamView
-            key={team.abbr}
+            key={`${season}:${team.abbr}`}
             data={data}
             team={team}
             fits={fits}
@@ -234,6 +290,7 @@ export default function App() {
             mode={mode}
             textured={textured}
             swap={swap}
+            projected={projected}
             onSwap={(s) => go({ swap: s ? { out: s.out.id, in: s.in.id } : null })}
             onRules={setRules}
           />
@@ -245,6 +302,8 @@ export default function App() {
             ranks={ranks}
             rules={rules}
             mode={mode}
+            projected={projected}
+            basedOn={data.basedOn}
             onOpenTeam={open}
             onOpenChart={() => {
               setView('chart')
@@ -253,7 +312,21 @@ export default function App() {
           />
         )}
 
-        {view === 'chart' && (
+        {view === 'chart' && projected && (
+          <div className="team-head projected-note">
+            <h1>No standings yet</h1>
+            <p className="pooled-note">
+              {data.season} is a projection, so there are no records to set fit against. Switch
+              to {data.basedOn} to see how fit lined up with the standings, or{' '}
+              <button type="button" className="link" onClick={() => setView('league')}>
+                browse the projected boards
+              </button>
+              .
+            </p>
+          </div>
+        )}
+
+        {view === 'chart' && !projected && (
           <>
             <div className="team-head">
               <h1>Does fit explain the standings?</h1>

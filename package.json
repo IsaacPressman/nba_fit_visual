@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "data": "python pipeline/fetch_sources.py && cd pipeline && python build_data.py",
+    "project": "cd pipeline && python project_season.py",
     "lineups": "cd pipeline && python season.py 2025-26 --rating epm && python season.py 2025-26 && python season.py 2024-25 && python season.py 2023-24"
   },
   "dependencies": {

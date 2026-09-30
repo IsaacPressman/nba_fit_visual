@@ -30,10 +30,29 @@ npm run dev          # the bundle in public/ is committed, so this just works
 `npm test` runs the model, geometry and live-data suites. `npm run build`
 type-checks and produces `dist/`.
 
+## 2026-27, projected
+
+The season switch in the header opens a projected 2026-27: next season's
+rosters (Basketball-Reference's 2027 team pages) scored on 2025-26 play. Every
+player keeps his 2025-26 skills, usage and minutes per game on the team that
+rosters him now, and each rotation is the eight rostered players with the most
+2025-26 minutes per game.
+
+```bash
+npm run project     # fetches rosters (cached) -> public/league-2026-27.json
+```
+
+What it cannot see: rookies and anyone under the 500-minute pool have nothing to
+score, so each team page names them instead; roles that change with a new team;
+and records, lineups and shared minutes, which do not exist yet — so in the
+projected season the chart, the lineups row and the shared-minutes notch colors
+step aside. Re-run it as rosters change; `--refetch` pulls them again.
+
 ## Links
 
 Everything worth sharing is in the URL hash, so any board can be linked
-exactly as you see it: `#/team/BOS`, `#/league`, `#/chart`. A swap rides along
+exactly as you see it: `#/team/BOS`, `#/league`, `#/chart`, and
+`?season=2026-27` for the projection. A swap rides along
 as `?swap=<out id>~<in id>`, and rules moved off their defaults as a compact
 `rules=` diff — an untouched rules panel adds nothing. `src/route.ts` owns the
 format and `src/route.test.ts` pins it.

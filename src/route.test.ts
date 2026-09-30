@@ -7,6 +7,7 @@ describe('route', () => {
   it('lands on the league grid on an empty hash', () => {
     expect(parseRoute('', 'OKC')).toEqual({
       view: 'league',
+      season: '2025-26',
       team: 'OKC',
       swap: null,
       rules: DEFAULT_RULES,
@@ -14,17 +15,15 @@ describe('route', () => {
   })
 
   it('adds nothing to the URL for untouched rules', () => {
-    expect(formatRoute({ view: 'team', team: 'BOS', swap: null, rules: DEFAULT_RULES })).toBe(
-      '#/team/BOS',
-    )
-    expect(formatRoute({ view: 'chart', team: 'BOS', swap: null, rules: DEFAULT_RULES })).toBe(
-      '#/chart',
-    )
+    const base = { season: '2025-26' as const, swap: null, rules: DEFAULT_RULES }
+    expect(formatRoute({ ...base, view: 'team', team: 'BOS' })).toBe('#/team/BOS')
+    expect(formatRoute({ ...base, view: 'chart', team: 'BOS' })).toBe('#/chart')
   })
 
   it('round-trips a swap and moved rules', () => {
     const route = {
       view: 'team' as const,
+      season: '2025-26' as const,
       team: 'BOS',
       swap: { out: 'jaylenbrown|BOS', in: 'amenthompson|HOU' },
       rules: {
@@ -45,6 +44,13 @@ describe('route', () => {
     expect(rules.needPivot).toBe(DEFAULT_RULES.needPivot)
     expect(rules.depth.shooting).toBe(0.5)
     expect('bogus' in rules).toBe(false)
+  })
+
+  it('carries a non-default season, and ignores one it does not know', () => {
+    const route = parseRoute('#/team/BOS?season=2026-27', 'OKC')
+    expect(route.season).toBe('2026-27')
+    expect(formatRoute(route)).toBe('#/team/BOS?season=2026-27')
+    expect(parseRoute('#/league?season=1999-00', 'OKC').season).toBe('2025-26')
   })
 
   it('drops a swap outside the team view', () => {

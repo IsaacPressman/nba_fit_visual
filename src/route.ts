@@ -11,8 +11,14 @@ import { DEFAULT_RULES, type Rules } from './fit/types'
 
 export type View = 'team' | 'league' | 'chart'
 
+/** The seasons there is a bundle for; the first is the default and stays out of URLs. */
+export const SEASONS = ['2025-26', '2026-27'] as const
+export type Season = (typeof SEASONS)[number]
+export const DEFAULT_SEASON: Season = SEASONS[0]
+
 export interface Route {
   view: View
+  season: Season
   team: string
   swap: { out: string; in: string } | null
   rules: Rules
@@ -68,11 +74,17 @@ export function parseRoute(hash: string, fallbackTeam: string): Route {
     }
   }
 
+  const asked = params.get('season')
+  const season = (SEASONS as readonly string[]).includes(asked ?? '')
+    ? (asked as Season)
+    : DEFAULT_SEASON
+
   const s = params.get('swap')?.split('~')
   const swap = s && s.length === 2 && s[0] && s[1] ? { out: s[0], in: s[1] } : null
 
   return {
     view,
+    season,
     team: (view === 'team' && abbr ? abbr : fallbackTeam).toUpperCase(),
     swap: view === 'team' ? swap : null,
     rules,
@@ -81,6 +93,7 @@ export function parseRoute(hash: string, fallbackTeam: string): Route {
 
 export function formatRoute(route: Route): string {
   const params = new URLSearchParams()
+  if (route.season !== DEFAULT_SEASON) params.set('season', route.season)
   if (route.view === 'team' && route.swap) {
     params.set('swap', `${route.swap.out}~${route.swap.in}`)
   }

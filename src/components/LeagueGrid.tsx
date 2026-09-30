@@ -35,12 +35,16 @@ function Intro({
   fits,
   rules,
   mode,
+  projected,
+  basedOn,
   onOpenTeam,
   onOpenChart,
 }: {
   fits: TeamFit[]
   rules: Rules
   mode: Mode
+  projected: boolean
+  basedOn?: string
   onOpenTeam: (abbr: string) => void
   onOpenChart: () => void
 }) {
@@ -85,13 +89,21 @@ function Intro({
           <b>Whatever nobody covers stays striped</b> — that striped share is the team's
           exposure, and lower is better.
         </p>
-        <p className="landing-links">
-          Pick a team below, or{' '}
-          <button type="button" className="link" onClick={onOpenChart}>
-            see whether fit explains the standings
-          </button>
-          .
-        </p>
+        {projected ? (
+          <p className="landing-links">
+            <b>A projection.</b> These are next season's rosters, with every player carrying his{' '}
+            {basedOn} skills, usage and minutes onto his new team. Rookies and players without
+            enough {basedOn} minutes are named on each team's page, not scored.
+          </p>
+        ) : (
+          <p className="landing-links">
+            Pick a team below, or{' '}
+            <button type="button" className="link" onClick={onOpenChart}>
+              see whether fit explains the standings
+            </button>
+            .
+          </p>
+        )}
       </div>
 
       <figure className="landing-demo">
@@ -113,7 +125,8 @@ function Intro({
         </button>
         <figcaption>
           <span>
-            {demo.team.name}, the league's median fit: {demo.wastedFitPct.toFixed(1)}% exposed.
+            {demo.team.name}, the league's median{projected ? ' projected' : ''} fit:{' '}
+            {demo.wastedFitPct.toFixed(1)}% exposed.
           </span>
           <button type="button" className="link" onClick={() => setRun((n) => n + 1)}>
             Assemble again
@@ -129,6 +142,8 @@ export function LeagueGrid({
   ranks,
   rules,
   mode,
+  projected,
+  basedOn,
   onOpenTeam,
   onOpenChart,
 }: {
@@ -136,10 +151,15 @@ export function LeagueGrid({
   ranks: Map<string, number>
   rules: Rules
   mode: Mode
+  /** a projected season: no records, so no record sort and none on the tiles */
+  projected: boolean
+  basedOn?: string
   onOpenTeam: (abbr: string) => void
   onOpenChart: () => void
 }) {
-  const [sort, setSort] = useState<Sort>('fit')
+  const [chosenSort, setSort] = useState<Sort>('fit')
+  // a projection has no records to sort by
+  const sort: Sort = projected ? 'fit' : chosenSort
 
   const maxLoad = useMemo(() => Math.max(...fits.map((f) => f.totalLoad)), [fits])
   const maxExposure = useMemo(
@@ -163,28 +183,32 @@ export function LeagueGrid({
         fits={fits}
         rules={rules}
         mode={mode}
+        projected={projected}
+        basedOn={basedOn}
         onOpenTeam={onOpenTeam}
         onOpenChart={onOpenChart}
       />
 
       <div className="grid-tools">
         <h2>All 30 teams</h2>
-        <div className="tabs" role="group" aria-label="Sort the league">
-          <button
-            type="button"
-            aria-current={sort === 'fit' ? 'page' : undefined}
-            onClick={() => setSort('fit')}
-          >
-            Best fit
-          </button>
-          <button
-            type="button"
-            aria-current={sort === 'record' ? 'page' : undefined}
-            onClick={() => setSort('record')}
-          >
-            Best record
-          </button>
-        </div>
+        {!projected && (
+          <div className="tabs" role="group" aria-label="Sort the league">
+            <button
+              type="button"
+              aria-current={sort === 'fit' ? 'page' : undefined}
+              onClick={() => setSort('fit')}
+            >
+              Best fit
+            </button>
+            <button
+              type="button"
+              aria-current={sort === 'record' ? 'page' : undefined}
+              onClick={() => setSort('record')}
+            >
+              Best record
+            </button>
+          </div>
+        )}
         <p className="pooled-note" style={{ margin: 0 }}>
           Board size is the share of possessions the top eight carry, on one scale across all
           thirty. Only the stripes are exposure. Ranks within a point of each other are ties.
@@ -198,7 +222,7 @@ export function LeagueGrid({
             className="tile"
             key={f.team.abbr}
             onClick={() => onOpenTeam(f.team.abbr)}
-            aria-label={`${f.team.name}, ${f.team.wins}-${f.team.losses}, ${f.wastedFitPct.toFixed(
+            aria-label={`${f.team.name}${projected ? '' : `, ${f.team.wins}-${f.team.losses}`}, ${f.wastedFitPct.toFixed(
               1,
             )}% exposure, rank ${rankLabel(ranks, f.team.abbr)}. Open board.`}
           >
@@ -214,9 +238,11 @@ export function LeagueGrid({
               <span className="tile-name" title={f.team.name}>
                 {nickname(f.team.name)}
               </span>
-              <span className="tile-record">
-                {f.team.wins}-{f.team.losses}
-              </span>
+              {!projected && (
+                <span className="tile-record">
+                  {f.team.wins}-{f.team.losses}
+                </span>
+              )}
             </span>
             <span className="tile-bar" aria-hidden="true">
               <i style={{ width: `${(f.wastedFitPct / maxExposure) * 100}%` }} />
