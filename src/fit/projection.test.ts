@@ -47,12 +47,27 @@ describe.skipIf(!have)('2026-27 projection', () => {
     for (const t of league.teams) {
       for (const p of t.players) {
         const old = before.get(p.key)
+        if (p.smallSample) {
+          // below the 2025-26 pool, so there is no pool entry to compare with
+          expect(old).toBeUndefined()
+          continue
+        }
         expect(old, `${p.name} should be in the 2025-26 pool`).toBeDefined()
         expect(p.pct).toEqual(old!.pct)
         expect(p.raw.epm).toBe(old!.raw.epm)
         expect(p.usg).toBe(old!.usg)
       }
     }
+  })
+
+  it('scores injury-shortened veterans only on a real, if small, 2025-26 sample', () => {
+    const small = league.teams.flatMap((t) => t.players).filter((p) => p.smallSample)
+    for (const p of small) {
+      expect(p.raw.seasonMin).toBeGreaterThanOrEqual(250)
+      expect(p.raw.seasonMin).toBeLessThan(now.pool.minMinutes)
+    }
+    const was = league.teams.find((t) => t.abbr === 'WAS')!
+    expect(was.players.some((p) => p.key === 'traeyoung' && p.smallSample)).toBe(true)
   })
 
   it('picks each rotation by 2025-26 minutes per game', () => {

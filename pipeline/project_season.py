@@ -8,8 +8,15 @@ keeps his 2025-26 skills, usage and minutes per game, and plays them on the team
 that rosters him for 2026-27. Each team's rotation is its eight rostered players
 with the most 2025-26 minutes per game.
 
-What that cannot see: rookies and anyone under the 500-minute pool have no
-2025-26 skills to score, so they are listed per team rather than guessed at;
+Injury-shortened seasons: a player with 250-499 minutes in 2025-26 is scored
+too if he played 1,000+ minutes in 2024-25 — an established player whose last
+season was cut short (Trae Young's 382 minutes, say), as opposed to a late-season
+call-up with big minutes in a handful of games. 2024-25 only decides who is
+eligible; his skills still come from 2025-26 alone, shrunk hard toward average
+by the small sample, and he is flagged `smallSample` so the app can say so.
+
+What that cannot see: rookies and anyone else without enough 2025-26 minutes
+have no skills to score, so they are listed per team rather than guessed at;
 roles change with a new team (a sixth man who becomes a starter keeps his old
 minutes here); and there are no records, lineups or shared minutes yet.
 
@@ -38,6 +45,22 @@ UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 # Basketball-Reference allows about 20 requests a minute
 PAUSE_S = 3.5
 MIN_ROSTER = 12
+# injury-shortened seasons: see the module docstring
+SMALL_SAMPLE_MIN = 250
+ESTABLISHED_MIN = 1000
+PRIOR_SEASON = DATA / "seasons" / "2024-25" / "players.csv"
+
+
+def established_last_year():
+    """Name keys of players with ESTABLISHED_MIN+ minutes in 2024-25, from the
+    lineup pipeline's player totals; empty (with a warning) if not fetched."""
+    if not PRIOR_SEASON.exists():
+        print(f"note: {PRIOR_SEASON.relative_to(ROOT)} missing, so no injury-shortened "
+              "players are scored (python pipeline/season.py 2024-25)")
+        return set()
+    p = pd.read_csv(PRIOR_SEASON)
+    minutes = (p.assign(key=p["name"].map(norm_name)).groupby("key")["seconds"].sum() / 60.0)
+    return set(minutes[minutes >= ESTABLISHED_MIN].index)
 
 
 def fetch_rosters(refetch):
@@ -72,12 +95,18 @@ def main():
 
     stints, season, sk, reg = prepare()
     pool_keys = set(season.loc[season["MIN"] >= POOL_MIN_MINUTES, "key"])
+    shortened = season[(season["MIN"] >= SMALL_SAMPLE_MIN) & (season["MIN"] < POOL_MIN_MINUTES)]
+    small_sample = set(shortened["key"]) & established_last_year() & set(rosters["key"])
+    scoreable = pool_keys | small_sample
+    if small_sample:
+        print("injury-shortened, scored on a small sample: "
+              + ", ".join(sorted(season.set_index("key").loc[list(small_sample), "PLAYER"])))
 
     # A scored player on two rosters would be drawn twice; that must stop the
     # build. An unscored name on two rosters (a camp invite, or two people who
     # share a name) is never drawn, so it only warns.
     dupes = rosters[rosters.duplicated("key", keep=False)]
-    scored_dupes = sorted(set(dupes.loc[dupes["key"].isin(pool_keys), "name"]))
+    scored_dupes = sorted(set(dupes.loc[dupes["key"].isin(pool_keys | set(season.loc[season["MIN"] >= SMALL_SAMPLE_MIN, "key"])), "name"]))
     if scored_dupes:
         sys.exit("rosters: scored players listed on two teams: " + ", ".join(scored_dupes))
     if len(dupes):
@@ -88,6 +117,12 @@ def main():
     whole = season.set_index("key")
     team_of = dict(zip(rosters["key"], rosters["team"]))
     current = json.loads(CURRENT.read_text(encoding="utf-8"))
+
+    def payload(row):
+        p = player_payload(row, sk.loc[row["key"]])
+        if row["key"] in small_sample:
+            p["smallSample"] = True
+        return p
 
     def projected(key, team):
         row = primary.loc[key].copy()
@@ -101,15 +136,15 @@ def main():
     for abbr in TEAMS:
         name, _bbref, c1, c2 = TEAMS[abbr]
         roster = rosters[rosters["team"] == abbr]
-        scored = [k for k in roster["key"] if k in pool_keys]
+        scored = [k for k in roster["key"] if k in scoreable]
         # standard contracts first (draft picks, signings), two-way deals after
-        missing = roster[~roster["key"].isin(pool_keys)].sort_values("two_way", kind="stable")
+        missing = roster[~roster["key"].isin(scoreable)].sort_values("two_way", kind="stable")
         unscored = [n + (" (two-way)" if tw else "") for n, tw in zip(missing["name"], missing["two_way"])]
         rows = sorted((projected(k, abbr) for k in scored), key=lambda r: -r["mpg"])
         rotation = rows[:ROTATION_SIZE]
         if len(rotation) < ROTATION_SIZE:
             sys.exit(f"{abbr}: only {len(rotation)} rostered players have 2025-26 skills")
-        players = [player_payload(r, sk.loc[r["key"]]) for r in rotation]
+        players = [payload(r) for r in rotation]
         load_sum = sum(p["load"] for p in players) or 1.0
         talent = sum(p["load"] * p["raw"]["epm"] for p in players) / load_sum
         teams.append({
@@ -124,7 +159,7 @@ def main():
               + (f"  | not scored: {len(unscored)}" if unscored else ""))
 
     # swap candidates: every pool player, on his 2026-27 team, or FA if unsigned
-    league = [player_payload(projected(k, team_of.get(k, "FA")), sk.loc[k]) for k in pool_keys]
+    league = [payload(projected(k, team_of.get(k, "FA"))) for k in scoreable]
     league.sort(key=lambda p: -p["min"])
 
     payload = {

@@ -131,6 +131,14 @@ export function PlayerPanel({
         />
       </div>
 
+      {p.smallSample && (
+        <p className="pooled-note">
+          <b>Small sample.</b> Scored on {p.raw.seasonMin} minutes of 2025-26, a season cut short
+          after an established one, so every percentile here is pulled well toward average and
+          his minutes per game are likely lower than he will play.
+        </p>
+      )}
+
       {shape.compounding && (
         <p className="pooled-note">
           More than one weakness, so each one cuts {((shape.compound - 1) * 100).toFixed(0)}%

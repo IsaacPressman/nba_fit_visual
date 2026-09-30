@@ -6,6 +6,11 @@ export const CHANNELS = [...SKILLS, 'ballDominance', 'noCreator'] as const
 export type Channel = (typeof CHANNELS)[number]
 
 export interface Player {
+  /**
+   * Projected seasons only: scored on an injury-shortened 250-499 minutes (after
+   * 1,000+ the season before), so his skills are pulled hard toward average.
+   */
+  smallSample?: boolean
   id: string
   key: string
   name: string

@@ -49,6 +49,10 @@ export function Methodology({ data }: { data: League }) {
           most {data.basedOn} minutes per game. It cannot see roles changing with a new team — a
           sixth man who becomes a starter keeps his old minutes here — and rookies or anyone
           without enough {data.basedOn} minutes are named on the team page rather than scored.
+          The one exception is an injury-shortened season: a player with 250 to 499{' '}
+          {data.basedOn} minutes is scored if he played 1,000 or more the season before, so a
+          star back from injury is on the board. He is marked "small sample", because so few
+          minutes pull his percentiles well toward average.
           There are no records, lineups or shared minutes yet, so the chart, the lineups row and
           the shared-minutes notch colors wait for games to be played.
         </p>

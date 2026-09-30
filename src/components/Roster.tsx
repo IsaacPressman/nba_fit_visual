@@ -17,11 +17,12 @@ const SKILL_NAME: Record<Skill, string> = {
 
 interface Tag {
   text: string
-  kind: 'notch' | 'strength' | 'ball'
+  kind: 'notch' | 'strength' | 'ball' | 'caution'
 }
 
 export function tagsFor(shape: Shape): Tag[] {
   const tags: Tag[] = []
+  if (shape.player.smallSample) tags.push({ text: 'small sample', kind: 'caution' })
   if (shape.tab > 0) tags.push({ text: 'ball-dominant', kind: 'ball' })
   for (const k of SKILLS) {
     if (shape.notch[k] > 0) tags.push({ text: `no ${SKILL_NAME[k]}`, kind: 'notch' })

@@ -468,6 +468,12 @@ main {
   border-style: dashed;
 }
 
+.tag[data-kind='caution'] {
+  border-style: dotted;
+  border-color: var(--ink-2);
+  color: var(--ink);
+}
+
 .tag[data-kind='strength'] {
   border-color: var(--ink);
   color: var(--ink);

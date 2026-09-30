@@ -42,8 +42,16 @@ rosters him now, and each rotation is the eight rostered players with the most
 npm run project     # fetches rosters (cached) -> public/league-2026-27.json
 ```
 
-What it cannot see: rookies and anyone under the 500-minute pool have nothing to
-score, so each team page names them instead; roles that change with a new team;
+Injury-shortened seasons are the exception to the 500-minute pool: a player
+with 250-499 minutes in 2025-26 is scored if he played 1,000+ in 2024-25, so an
+established player whose season was cut short (Trae Young, Dejounte Murray, Ty
+Jerome, Zach Edey, Max Strus) is on the board rather than a late-season call-up
+with big minutes in a few games. 2024-25 only decides eligibility; his skills
+still come from 2025-26 alone, pulled hard toward average by the small sample,
+and the app marks him "small sample".
+
+What it cannot see: rookies and anyone else without enough 2025-26 minutes have
+nothing to score, so each team page names them instead; roles that change with a new team;
 and records, lineups and shared minutes, which do not exist yet — so in the
 projected season the chart, the lineups row and the shared-minutes notch colors
 step aside. Re-run it as rosters change; `--refetch` pulls them again.
