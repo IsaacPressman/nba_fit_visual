@@ -158,6 +158,7 @@ export default function App() {
 
   const setView = (next: View) => go({ view: next, swap: null }, true)
   const setSeason = (next: Season) => go({ season: next, swap: null }, true)
+  const homeHref = formatRoute({ ...route, view: 'league', swap: null })
   const projected = !!data?.projected
 
   const open = (next: string) => {
@@ -188,7 +189,10 @@ export default function App() {
       <SvgDefs mode={mode} />
 
       <header className="topbar">
-        <span className="wordmark">Missing Pieces</span>
+        {/* the name is the way home: the league grid, in whichever season is open */}
+        <a className="wordmark" href={homeHref} onClick={() => window.scrollTo({ top: 0 })}>
+          Missing Pieces
+        </a>
 
         <div
           className="tabs season-tabs"
@@ -287,6 +291,7 @@ export default function App() {
             ranks={ranks}
             rules={rules}
             customRules={customRules}
+            homeHref={homeHref}
             mode={mode}
             textured={textured}
             swap={swap}

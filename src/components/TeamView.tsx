@@ -144,6 +144,7 @@ export function TeamView({
   textured,
   swap,
   projected = false,
+  homeHref,
   onSwap,
   onRules,
 }: {
@@ -160,6 +161,8 @@ export function TeamView({
   projected?: boolean
   onSwap: (s: { out: Player; in: Player } | null) => void
   onRules: (r: Rules) => void
+  /** link back to the league grid, in the same season */
+  homeHref: string
 }) {
   const [assembly, setAssembly] = useState<Assembly>('exploded')
   const [highlight, setHighlight] = useState<Highlight>(null)
@@ -340,6 +343,10 @@ export function TeamView({
 
   return (
     <>
+      <a className="back-link" href={homeHref} onClick={() => window.scrollTo({ top: 0 })}>
+        <span aria-hidden="true">←</span> All 30 teams
+      </a>
+
       <div className="team-head">
         <h1>{team.name}</h1>
         <span className="record">
