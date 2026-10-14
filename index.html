@@ -3,22 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Missing Pieces</title>
+    <title>Missing Pieces: How Well Every NBA Rotation Fits Together</title>
     <meta
       name="description"
-      content="How well every NBA rotation fits together, 2025-26. Each player is a puzzle piece; weaknesses cut notches, teammates' strengths fill them."
+      content="How well every NBA rotation fits together, 2025-26 and projected 2026-27. Each player is a puzzle piece; weaknesses cut notches, teammates' strengths fill them."
     />
+    <meta name="author" content="Isaac Pressman" />
     <meta name="theme-color" content="#f2f3f1" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0e100f" media="(prefers-color-scheme: dark)" />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Missing Pieces" />
     <meta property="og:title" content="Missing Pieces" />
     <meta
       property="og:description"
       content="How well every NBA rotation fits together, 2025-26. Weaknesses cut notches, teammates' strengths fill them, and whatever nobody covers stays striped."
     />
     <meta property="og:image" content="og.png" />
-    <meta name="twitter:image" content="og.png" />
+    <meta property="og:image:alt" content="NBA rotations drawn as puzzle boards, with uncovered weaknesses striped" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Missing Pieces" />
+    <meta
+      name="twitter:description"
+      content="How well every NBA rotation fits together, 2025-26. Weaknesses cut notches, teammates' strengths fill them, and whatever nobody covers stays striped."
+    />
+    <meta name="twitter:image" content="og.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Missing Pieces",
+        "description": "How well every NBA rotation fits together, 2025-26 and projected 2026-27. Each player is a puzzle piece; weaknesses cut notches, teammates' strengths fill them, and whatever nobody covers stays striped.",
+        "applicationCategory": "SportsApplication",
+        "operatingSystem": "Any",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "Isaac Pressman" }
+      }
+    </script>
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -29,6 +50,16 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>How well does each NBA rotation fit together?</h1>
+      <p>
+        Missing Pieces draws every NBA rotation, 2025-26 and projected 2026-27, as a puzzle. Each
+        player is a piece sized by his share of possessions; his weaknesses cut notches, teammates'
+        strengths fill them, and whatever nobody covers stays striped. That striped share is the
+        team's exposure, and lower is better. Turn on JavaScript to see all 30 teams.
+      </p>
+      <p>Built by Isaac Pressman.</p>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

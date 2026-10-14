@@ -290,6 +290,18 @@ main {
   margin: 0 auto;
 }
 
+.colophon {
+  padding: calc(var(--step) * 4) calc(var(--step) * 6) calc(var(--step) * 8);
+  border-top: 1px solid var(--hair);
+  color: var(--ink-3);
+  font-size: var(--f-small);
+  text-align: center;
+}
+
+.colophon a {
+  color: var(--ink-2);
+}
+
 /* ------------------------------------------------------------- team view */
 
 .team-head {

@@ -353,6 +353,11 @@ export default function App() {
         )}
       </main>
 
+      <footer className="colophon">
+        Built by Isaac Pressman.{' '}
+        <a href="https://github.com/IsaacPressman/nba_fit_visual">Source on GitHub</a>
+      </footer>
+
       <Tooltip />
     </div>
   )

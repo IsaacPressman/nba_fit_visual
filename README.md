@@ -84,7 +84,9 @@ SITE_URL=https://your-domain.example npm run build
 ```
 
 Without `SITE_URL` the preview tags stay relative, which is fine locally and
-means most sites will show the link without an image.
+means most sites will show the link without an image. `SITE_URL` also sets the
+canonical link and structured-data url, and writes `sitemap.xml` and a
+`robots.txt` that points to it; submit the sitemap in Google Search Console.
 
 ## Rebuilding the data
 
